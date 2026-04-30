@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bloom | Your Personal Garden</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sky: #a2d2ff; --leaf: #95d5b2; --sun: #ffee93; --pink: #ffafcc; --white: #ffffff;
+            --text: #2d6a4f; --accent: #55a630; --bg: var(--sky);
+        }
+        body.dark-mode {
+            --bg: #1a1a2e; --white: #16213e; --text: #e94560; --leaf: #0f3460; --sky: #0a0a1a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Quicksand', sans-serif; transition: background 0.4s, color 0.4s; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+        h1, h2, .garden-font { font-family: 'Fredoka', cursive; }
+
+        /* --- Navigation --- */
+        nav { 
+            background: var(--white); padding: 1rem; display: none; 
+            justify-content: space-around; position: sticky; top: 0; z-index: 1000; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+        }
+        .nav-item { cursor: pointer; font-weight: bold; padding: 8px 15px; border-radius: 15px; font-size: 0.9rem; }
+        .nav-item:hover { background: var(--sun); }
+
+        /* --- Layouts --- */
+        .container { padding: 2rem; max-width: 1000px; margin: 0 auto; display: none; animation: fadeIn 0.5s ease; }
+        .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: var(--white); padding: 2rem; border-radius: 30px; border: 4px solid var(--leaf); margin-bottom: 1.5rem; position: relative; }
+        .btn { background: var(--pink); color: white; border: none; padding: 12px 25px; border-radius: 50px; cursor: pointer; font-family: 'Fredoka'; border-bottom: 4px solid rgba(0,0,0,0.1); }
+        .btn:active { transform: translateY(2px); border-bottom: 0; }
+
+        /* --- Auth Page --- */
+        .auth-box { max-width: 400px; margin: 80px auto; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 15px; border: 2px solid var(--leaf); outline: none; background: var(--white); color: var(--text); }
+
+        /* --- Pomodoro Hourglass --- */
+        .hourglass-container { width: 120px; height: 180px; margin: 20px auto; position: relative; }
+        .glass { 
+            width: 100%; height: 100%; border: 6px solid var(--text); 
+            clip-path: polygon(0% 0%, 100% 0%, 50% 50%, 100% 100%, 0% 100%, 50% 50%);
+            background: rgba(255,255,255,0.2); position: relative;
+        }
+        .sand-top { 
+            position: absolute; top: 0; width: 100%; background: var(--sand-color, #ffee93); 
+            height: 50%; transform-origin: bottom; transition: height 1s linear;
+        }
+        .sand-bottom { 
+            position: absolute; bottom: 0; width: 100%; background: var(--sand-color, #ffee93); 
+            height: 0%; transition: height 1s linear;
+        }
+
+        /* --- Notes Tab --- */
+        .note-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .note-cover { 
+            background: var(--sun); padding: 20px; border-radius: 15px; cursor: pointer; 
+            text-align: center; border: 2px dashed var(--text); height: 120px; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- Certificate --- */
+        #cert-overlay { 
+            position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); 
+            display:none; justify-content:center; align-items:center; z-index: 3000;
+        }
+        .certificate { 
+            background: #fff9e6; padding: 40px; border: 15px double var(--accent); text-align:center; width: 90%; max-width: 600px;
+            color: #333; position: relative;
+        }
+
+        /* --- Footer --- */
+        footer { text-align: center; padding: 2rem; font-size: 0.8rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <nav id="navbar">
+        <span class="nav-item" onclick="showTab('garden')">🌻 Garden</span>
+        <span class="nav-item" onclick="showTab('notes')">📔 Notes</span>
+        <span class="nav-item" onclick="showTab('pomo')">⏳ Timer</span>
+        <span class="nav-item" onclick="showTab('profile')">👤 Profile</span>
+        <span class="nav-item" onclick="toggleMode()">🌓 Mode</span>
+        <span class="nav-item" style="color:#e94560" onclick="logout()">Logout</span>
+    </nav>
+
+    <div id="auth-screen" class="container active">
+        <div class="card auth-box">
+            <h1 id="auth-title">Bloom Garden</h1>
+            <div id="signup-fields">
+                <input type="text" id="reg-user" placeholder="Username">
+                <input type="email" id="reg-email" placeholder="Email Address">
+            </div>
+            <input type="password" id="reg-pass" placeholder="Password">
+            <button class="btn" onclick="handleAuth()" id="auth-btn">Start My Garden</button>
+            <p style="margin-top:15px; font-size:0.8rem; cursor:pointer" onclick="toggleAuth()">Already a gardener? Login</p>
+        </div>
+    </div>
+
+    <div id="garden-tab" class="container">
+        <div style="display:flex; justify-content: space-between; margin-bottom: 20px;">
+            <div class="card" style="padding:10px 20px; margin:0">🔥 Streak: <span id="streak-count">0</span></div>
+            <div class="card" style="padding:10px 20px; margin:0">⭐ Points: <span id="points-count">0</span></div>
+        </div>
+
+        <div class="card" style="text-align:center;">
+            <div id="tree-display" style="font-size: 8rem; margin: 20px 0;">🌱</div>
+            <h2 id="growth-msg">Welcome, Seedling!</h2>
+            <p>Day <span id="day-num">1</span> of 45</p>
+        </div>
+
+        <div class="card">
+            <h2>Daily Tasks</h2>
+            <div style="display:flex; gap:10px; margin: 15px 0;">
+                <input type="text" id="task-input" placeholder="What needs water today?">
+                <button class="btn" onclick="addTask()">Add</button>
+            </div>
+            <div id="task-list"></div>
+        </div>
+    </div>
+
+    <div id="notes-tab" class="container">
+        <h2>My Secret Notebook</h2>
+        <div id="note-container" class="note-grid"></div>
+        <div class="card">
+            <h3>New Page</h3>
+            <input type="text" id="note-head" placeholder="Heading">
+            <textarea id="note-body" placeholder="Write your thoughts..." style="width:100%; height:100px; border-radius:15px; padding:10px; border:2px solid var(--leaf); margin:10px 0;"></textarea>
+            <button class="btn" onclick="addNote()">Save to Garden</button>
+        </div>
+    </div>
+
+    <div id="pomo-tab" class="container" style="text-align:center;">
+        <h2>Focus Timer</h2>
+        <div class="hourglass-container">
+            <div class="glass">
+                <div class="sand-top" id="sand-top"></div>
+                <div class="sand-bottom" id="sand-bottom"></div>
+            </div>
+        </div>
+        <div class="card" style="display:inline-block;">
+            <div style="margin-bottom:10px;">
+                Work: <input type="number" id="work-m" value="25" style="width:60px"> 
+                Break: <input type="number" id="break-m" value="5" style="width:60px">
+            </div>
+            <input type="color" id="sand-color" value="#ffee93"> Sand Color
+            <br><br>
+            <button class="btn" onclick="startTimer()">Flip Hourglass</button>
+        </div>
+    </div>
+
+    <div id="profile-tab" class="container">
+        <div class="card" style="text-align:center;">
+            <div id="pfp-circle" style="width:100px; height:100px; background:var(--leaf); border-radius:50%; margin: 0 auto 20px; overflow:hidden;">
+                <img id="display-pfp" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+            </div>
+            <h2 id="profile-name">User Name</h2>
+            <hr style="margin:20px 0; opacity:0.2">
+            <input type="text" id="edit-name" placeholder="Change Username">
+            <input type="text" id="edit-pfp" placeholder="Profile Picture URL">
+            <input type="password" id="edit-pass" placeholder="Change Password">
+            <button class="btn" onclick="updateProfile()">Save Changes</button>
+        </div>
+    </div>
+
+    <div id="cert-overlay">
+        <div class="certificate">
+            <h1 class="garden-font" style="color:var(--accent)">CONGRATULATIONS</h1>
+            <p style="margin: 20px 0;">This certifies that</p>
+            <h2 id="cert-user-name" class="garden-font">Gardener</h2>
+            <p>Successfully completed <span id="cert-days">7</span> Days of Growth!</p>
+            <p style="margin: 20px 0; font-style: italic;">"Keep moving ahead, your garden is blooming."</p>
+            <div style="font-weight: bold; color: var(--accent);">+30 Bonus Points Reward!</div>
+            <p style="margin-top: 30px; font-size: 0.7rem;">Made by Aaria</p>
+            <button class="btn" onclick="closeCert()" style="margin-top:20px">Claim Reward</button>
+        </div>
+    </div>
+
+    <footer id="footer-text">Made by Aaria</footer>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('gardenDB')) || {
+            users: {}, current: null
+        };
+
+        let isLoginMode = false;
+
+        // --- AUTH LOGIC ---
+        function toggleAuth() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('auth-title').innerText = isLoginMode ? "Gardener Login" : "Bloom Garden";
+            document.getElementById('signup-fields').style.display = isLoginMode ? "none" : "block";
+            document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Start My Garden";
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            const name = document.getElementById('reg-user').value;
+
+            if (isLoginMode) {
+                if (db.users[email] && db.users[email].pass === pass) {
+                    db.current = email;
+                } else { return alert("Invalid credentials!"); }
+            } else {
+                if (!email || !name) return alert("Fill all fields!");
+                db.users[email] = {
+                    name, email, pass, points: 0, streak: 0, 
+                    lastLogin: null, tasks: [], notes: [], 
+                    day: 0, pfp: ""
+                };
+                db.current = email;
+            }
+            save();
+            initApp();
+        }
+
+        // --- APP LOGIC ---
+        function initApp() {
+            const user = db.users[db.current];
+            document.getElementById('auth-screen').style.display = "none";
+            document.getElementById('navbar').style.display = "flex";
+            document.getElementById('profile-name').innerText = user.name;
+            showTab('garden');
+            processDailyLogin();
+        }
+
+        function processDailyLogin() {
+            const user = db.users[db.current];
+            const today = new Date().toDateString();
+
+            if (user.lastLogin !== today) {
+                user.day++;
+                user.points += 5; // 5 points for login
+                if (user.lastLogin) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    user.streak = (user.lastLogin === yesterday.toDateString()) ? user.streak + 1 : 1;
+                } else { user.streak = 1; }
+                
+                user.lastLogin = today;
+                checkMilestones(user.day);
+                save();
+            }
+            renderGarden();
+        }
+
+        function checkMilestones(day) {
+            const marks = [7, 15, 30, 45];
+            if (marks.includes(day)) {
+                const user = db.users[db.current];
+                user.points += 30;
+                document.getElementById('cert-user-name').innerText = user.name;
+                document.getElementById('cert-days').innerText = day;
+                document.getElementById('cert-overlay').style.display = "flex";
+                save();
+            }
+        }
+
+        function addTask() {
+            const input = document.getElementById('task-input');
+            if (!input.value) return;
+            db.users[db.current].tasks.push({ text: input.value, done: false });
+            input.value = "";
+            save();
+            renderGarden();
+        }
+
+        function toggleTask(idx) {
+            const user = db.users[db.current];
+            if (!user.tasks[idx].done) {
+                user.tasks[idx].done = true;
+                user.points += 5; // 5 points per task
+            }
+            save();
+            renderGarden();
+        }
+
+        function renderGarden() {
+            const user = db.users[db.current];
+            document.getElementById('streak-count').innerText = user.streak;
+            document.getElementById('points-count').innerText = user.points;
+            document.getElementById('day-num').innerText = user.day;
+
+            const stages = ["🌱", "🌿", "🍀", "🪴", "🌳", "🌸", "🍎"];
+            const stageIdx = Math.min(6, Math.floor(user.day / 7));
+            document.getElementById('tree-display').innerText = stages[stageIdx];
+
+            const list = document.getElementById('task-list');
+            list.innerHTML = user.tasks.map((t, i) => `
+                <div class="task-item" style="padding:10px; margin-top:5px; background:var(--white); border-radius:10px; cursor:pointer; opacity:${t.done ? 0.5 : 1}" onclick="toggleTask(${i})">
+                    ${t.done ? '✅' : '🌸'} ${t.text}
+                </div>
+            `).join('');
+        }
+
+        // --- NOTES LOGIC ---
+        function addNote() {
+            const h = document.getElementById('note-head').value;
+            const b = document.getElementById('note-body').value;
+            if(!h) return;
+            db.users[db.current].notes.push({ h, b });
+            document.getElementById('note-head').value = "";
+            document.getElementById('note-body').value = "";
+            save();
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('note-container');
+            container.innerHTML = db.users[db.current].notes.map((n, i) => `
+                <div class="note-cover" onclick="alert('${n.b}')">
+                    <b>${n.h}</b>
+                </div>
+            `).join('');
+        }
+
+        // --- POMODORO ---
+        let timer;
+        function startTimer() {
+            clearInterval(timer);
+            const color = document.getElementById('sand-color').value;
+            document.documentElement.style.setProperty('--sand-color', color);
+            
+            const top = document.getElementById('sand-top');
+            const bottom = document.getElementById('sand-bottom');
+            let time = document.getElementById('work-m').value * 60;
+            let total = time;
+
+            timer = setInterval(() => {
+                time--;
+                let ratio = (time / total) * 50;
+                top.style.height = ratio + "%";
+                bottom.style.height = (50 - ratio) + "%";
+
+                if (time <= 0) {
+                    clearInterval(timer);
+                    alert("Time's up! Break starts now.");
+                }
+            }, 1000);
+        }
+
+        // --- HELPERS ---
+        function showTab(id) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            document.getElementById(id + '-tab').classList.add('active');
+            if(id === 'notes') renderNotes();
+        }
+
+        function toggleMode() { document.body.classList.toggle('dark-mode'); }
+        function save() { localStorage.setItem('gardenDB', JSON.stringify(db)); }
+        function logout() { location.reload(); }
+        function closeCert() { document.getElementById('cert-overlay').style.display = 'none'; }
+
+        function updateProfile() {
+            const user = db.users[db.current];
+            const name = document.getElementById('edit-name').value;
+            const pfp = document.getElementById('edit-pfp').value;
+            const pass = document.getElementById('edit-pass').value;
+
+            if(name) user.name = name;
+            if(pfp) { user.pfp = pfp; document.getElementById('display-pfp').src = pfp; document.getElementById('display-pfp').style.display = "block"; }
+            if(pass) user.pass = pass;
+            
+            alert("Profile Updated!");
+            save();
+            initApp();
+        }
+    </script>
+</body>
+</html>
