@@ -1,10 +1,4 @@
 # digigarden
-Here is a clean, plain-text README without any emojis:
-
----
-
-# Bloom – Your Personal Garden
-
 A soft, aesthetic productivity web app that turns your daily habits into a growing garden. Stay consistent, earn points, and watch your plant evolve as you complete tasks and maintain streaks.
 
 ---
